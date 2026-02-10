@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - n8n Scheduler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    .htmx-indicator {
+      display: none;
+    }
+    .htmx-request .htmx-indicator {
+      display: inline-block;
+    }
+    .htmx-request.htmx-indicator {
+      display: inline-block;
+    }
+    @keyframes pulse-green {
+      0%, 100% { background-color: rgb(220 252 231); }
+      50% { background-color: rgb(187 247 208); }
+    }
+    .animate-pulse-green {
+      animation: pulse-green 2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Sidebar -->
+  <div class="flex h-screen">
+    <aside class="w-64 bg-white shadow-lg">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800">n8n<br>Scheduler</h1>
+      </div>
+      
+      <nav class="mt-6">
+        <a href="/dashboard" hx-boost="false" class="flex items-center px-6 py-3 text-gray-700 bg-gray-100 border-l-4 border-blue-600">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          Dashboard
+        </a>
+        <a href="/execution-logs" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Execution Logs
+        </a>
+        <a href="/user/profile" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Settings
+        </a>
+        <a href="/logout" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          Logout
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="p-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800">Scheduled Workflows</h2>
+            <p class="text-gray-600 mt-1">Welcome back, <%= user.name %>!</p>
+          </div>
+          <div class="flex gap-2">
+            <button 
+              hx-delete="/schedules/all/delete"
+              hx-confirm="Are you sure you want to delete ALL schedules? This cannot be undone!"
+              hx-target="#schedules-list"
+              hx-swap="innerHTML"
+              class="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Delete All
+            </button>
+            <button 
+              onclick="openCreateModal()"
+              class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              Create New Schedule
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <input 
+                type="text" 
+                id="search-input"
+                placeholder="Search by name or URL..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onkeyup="applyFilters()"
+              >
+            </div>
+            <div>
+              <select 
+                id="status-filter"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onchange="applyFilters()"
+              >
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Executed">Executed</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </div>
+            <div>
+              <select 
+                id="frequency-filter"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onchange="applyFilters()"
+              >
+                <option value="">All Frequencies</option>
+                <option value="once">Once</option>
+                <option value="seconds">Seconds</option>
+                <option value="minutes">Minutes</option>
+                <option value="hours">Hours</option>
+                <option value="days">Days</option>
+                <option value="weeks">Weeks</option>
+                <option value="months">Months</option>
+                <option value="years">Years</option>
+              </select>
+            </div>
+            <div>
+              <button 
+                onclick="clearFilters()"
+                class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedules Table -->
+        <div class="bg-white rounded-xl shadow-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Webhook URL</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Schedule At</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="schedules-list" class="bg-white divide-y divide-gray-200" hx-get="/schedules" hx-trigger="load" hx-swap="innerHTML">
+                <tr>
+                  <td colspan="5" class="px-6 py-8 text-center text-gray-500">Loading schedules...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8" onclick="event.stopPropagation()">
+      <div id="modal-content">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Form Template -->
+  <template id="create-form-template">
+    <h2 class="text-2xl font-bold mb-6">Create New Schedule</h2>
+    <form 
+      hx-post="/schedules" 
+      hx-target="#schedules-list" 
+      hx-swap="innerHTML"
+      hx-indicator="#submit-spinner"
+      hx-disabled-elt="#submit-btn"
+      class="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
+    >
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Name</label>
+        <input 
+          type="text" 
+          name="name" 
+          placeholder="e.g., Daily Data Sync"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          required
+        >
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Webhook URL</label>
+        <div class="flex gap-2">
+          <input 
+            type="url" 
+            name="webhookUrl" 
+            placeholder="https://your-n8n-webhook-url..."
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          >
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">HTTP Method</label>
+        <select 
+          name="httpMethod" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="POST">POST</option>
+          <option value="GET">GET</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+      </div>
+
+      <!-- Authentication Section -->
+      <div class="border-t pt-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          Authentication
+        </h3>
+        
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Authentication Type</label>
+          <select 
+            id="auth-type" 
+            name="authType" 
+            onchange="toggleAuthFields()"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="none">None</option>
+            <option value="bearer">Bearer Token</option>
+            <option value="apikey">API Key</option>
+            <option value="basic">Basic Auth</option>
+          </select>
+        </div>
+
+        <!-- Bearer Token -->
+        <div id="bearer-fields" class="hidden space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Bearer Token</label>
+            <input 
+              type="password" 
+              name="authToken" 
+              placeholder="Enter your bearer token"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+            <p class="text-xs text-gray-500 mt-1">Will be sent as: Authorization: Bearer {token}</p>
+          </div>
+        </div>
+
+        <!-- API Key -->
+        <div id="apikey-fields" class="hidden space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Header Name</label>
+            <input 
+              type="text" 
+              name="authApiKeyName" 
+              placeholder="e.g., X-API-Key"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">API Key Value</label>
+            <input 
+              type="password" 
+              name="authApiKeyValue" 
+              placeholder="Enter your API key"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+          </div>
+        </div>
+
+        <!-- Basic Auth -->
+        <div id="basic-fields" class="hidden space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+            <input 
+              type="text" 
+              name="authUsername" 
+              placeholder="Enter username"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <input 
+              type="password" 
+              name="authPassword" 
+              placeholder="Enter password"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Headers Section -->
+      <div class="border-t pt-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          Custom Headers
+        </h3>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Headers (JSON)</label>
+          <textarea 
+            name="customHeaders" 
+            rows="4"
+            placeholder='{"X-Custom-Header": "value", "X-Request-ID": "12345"}'
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+          >{}</textarea>
+          <p class="text-xs text-gray-500 mt-1">Add custom headers as JSON key-value pairs</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Trigger Interval</label>
+        <select 
+          id="frequency" 
+          name="frequency" 
+          onchange="toggleIntervalInput()"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="once">Once (One-time execution)</option>
+          <option value="seconds">Seconds</option>
+          <option value="minutes">Minutes</option>
+          <option value="hours">Hours</option>
+          <option value="days">Days</option>
+          <option value="weeks">Weeks</option>
+          <option value="months">Months</option>
+          <option value="years">Years</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Choose how often this schedule should run</p>
+      </div>
+
+      <div id="interval-container" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Every</label>
+        <div class="flex items-center gap-2">
+          <input 
+            type="number" 
+            id="interval" 
+            name="interval" 
+            min="1" 
+            value="1"
+            class="w-24 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+          <span id="interval-unit" class="text-sm text-gray-600">second(s)</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Specify the interval (e.g., every 5 minutes)</p>
+      </div>
+
+      <!-- Time-Specific Scheduling Section -->
+      <div id="time-specific-container" class="hidden border-t pt-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Specific Time (Optional)
+        </h3>
+        
+        <div class="mb-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              id="use-specific-time" 
+              name="useSpecificTime" 
+              value="true"
+              onchange="toggleSpecificTimeFields()"
+              class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            >
+            <span class="text-sm font-medium text-gray-700">Run at specific time</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-6">Enable to run at a specific time (e.g., every day at 8:00 AM)</p>
+        </div>
+
+        <div id="specific-time-fields" class="hidden space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Hour (0-23)</label>
+              <input 
+                type="number" 
+                name="specificHour" 
+                min="0" 
+                max="23"
+                placeholder="8"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+              <p class="text-xs text-gray-500 mt-1">24-hour format</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Minute (0-59)</label>
+              <input 
+                type="number" 
+                name="specificMinute" 
+                min="0" 
+                max="59"
+                placeholder="0"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+            </div>
+          </div>
+
+          <!-- Days of Week (for weekly schedules) -->
+          <div id="days-of-week-container" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Days of Week</label>
+            <div class="grid grid-cols-7 gap-2">
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="0" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Sun</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="1" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Mon</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="2" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Tue</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="3" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Wed</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="4" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Thu</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="5" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Fri</span>
+              </label>
+              <label class="flex flex-col items-center gap-1 cursor-pointer">
+                <input type="checkbox" name="daysOfWeek[]" value="6" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <span class="text-xs text-gray-600">Sat</span>
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Select which days of the week to run</p>
+          </div>
+
+          <!-- Day of Month (for monthly schedules) -->
+          <div id="day-of-month-container" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Day of Month (1-31)</label>
+            <input 
+              type="number" 
+              name="dayOfMonth" 
+              min="1" 
+              max="31"
+              placeholder="1"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+            <p class="text-xs text-gray-500 mt-1">Which day of the month to run (e.g., 1 for first day)</p>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-sm text-blue-800">
+              <strong>Examples:</strong><br>
+              • Every day at 8:00 AM<br>
+              • Every Monday and Friday at 3:30 PM<br>
+              • Every 1st of the month at 9:00 AM
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">JSON Body</label>
+        <textarea 
+          name="jsonBody" 
+          rows="6"
+          placeholder='{"key": "value", "user_id": 123}'
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Start Date & Time</label>
+        <input 
+          type="datetime-local" 
+          name="scheduleAt" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          required
+        >
+        <p class="text-xs text-gray-500 mt-1">For recurring schedules, this is the first execution time</p>
+      </div>
+
+      <!-- Webhook Timeout Section -->
+      <div class="border-t pt-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Webhook Timeout
+        </h3>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Timeout (seconds)</label>
+          <input 
+            type="number" 
+            name="timeout" 
+            min="1" 
+            max="600"
+            value="30"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+          <p class="text-xs text-gray-500 mt-1">How long to wait for webhook response (1-600 seconds, default: 30s)</p>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+            <p class="text-xs text-yellow-800">
+              <strong>💡 For long-running n8n workflows:</strong><br>
+              Set a higher timeout (e.g., 300 seconds = 5 minutes) to keep the connection alive until your workflow completes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4 pt-4 sticky bottom-0 bg-white pb-2">
+        <button 
+          id="submit-btn"
+          type="submit"
+          class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <span id="submit-spinner" class="htmx-indicator">
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </span>
+          Save Schedule
+        </button>
+        <button 
+          type="button"
+          onclick="document.getElementById('modal').classList.add('hidden')"
+          class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </template>
+
+  <script>
+    if (window.dashboardInitialized) {
+      console.log('Dashboard already initialized, skipping...');
+    } else {
+      window.dashboardInitialized = true;
+      
+      function toggleIntervalInput() {
+        const frequency = document.getElementById('frequency').value;
+        const intervalContainer = document.getElementById('interval-container');
+        const intervalUnit = document.getElementById('interval-unit');
+        const timeSpecificContainer = document.getElementById('time-specific-container');
+        
+        if (frequency === 'once') {
+          intervalContainer.classList.add('hidden');
+          if (timeSpecificContainer) timeSpecificContainer.classList.add('hidden');
+        } else {
+          intervalContainer.classList.remove('hidden');
+          intervalUnit.textContent = frequency;
+          
+          if (timeSpecificContainer && ['hours', 'days', 'weeks', 'months', 'years'].includes(frequency)) {
+            timeSpecificContainer.classList.remove('hidden');
+            toggleSpecificTimeFields();
+          } else if (timeSpecificContainer) {
+            timeSpecificContainer.classList.add('hidden');
+          }
+        }
+      }
+
+      function toggleSpecificTimeFields() {
+        const useSpecificTime = document.getElementById('use-specific-time');
+        const specificTimeFields = document.getElementById('specific-time-fields');
+        const frequency = document.getElementById('frequency').value;
+        const daysOfWeekContainer = document.getElementById('days-of-week-container');
+        const dayOfMonthContainer = document.getElementById('day-of-month-container');
+        
+        if (!useSpecificTime || !specificTimeFields) return;
+        
+        if (useSpecificTime.checked) {
+          specificTimeFields.classList.remove('hidden');
+          
+          if (frequency === 'weeks' && daysOfWeekContainer) {
+            daysOfWeekContainer.classList.remove('hidden');
+            if (dayOfMonthContainer) dayOfMonthContainer.classList.add('hidden');
+          } else if (frequency === 'months' && dayOfMonthContainer) {
+            if (daysOfWeekContainer) daysOfWeekContainer.classList.add('hidden');
+            dayOfMonthContainer.classList.remove('hidden');
+          } else {
+            if (daysOfWeekContainer) daysOfWeekContainer.classList.add('hidden');
+            if (dayOfMonthContainer) dayOfMonthContainer.classList.add('hidden');
+          }
+        } else {
+          specificTimeFields.classList.add('hidden');
+        }
+      }
+
+      function toggleAuthFields() {
+        const authType = document.getElementById('auth-type');
+        if (!authType) return;
+        
+        const value = authType.value;
+        const bearerFields = document.getElementById('bearer-fields');
+        const apikeyFields = document.getElementById('apikey-fields');
+        const basicFields = document.getElementById('basic-fields');
+        
+        if (bearerFields) bearerFields.classList.add('hidden');
+        if (apikeyFields) apikeyFields.classList.add('hidden');
+        if (basicFields) basicFields.classList.add('hidden');
+        
+        if (value === 'bearer' && bearerFields) {
+          bearerFields.classList.remove('hidden');
+        } else if (value === 'apikey' && apikeyFields) {
+          apikeyFields.classList.remove('hidden');
+        } else if (value === 'basic' && basicFields) {
+          basicFields.classList.remove('hidden');
+        }
+      }
+
+    function toggleMenu(menuId, event) {
+      event.stopPropagation();
+      
+      document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+        if (menu.id !== menuId) {
+          menu.classList.add('hidden');
+        }
+      });
+      
+      const menu = document.getElementById(menuId);
+      if (menu) {
+        if (menu.classList.contains('hidden')) {
+          const button = event.currentTarget;
+          const rect = button.getBoundingClientRect();
+          
+          const menuHeight = 200;
+          const spaceBelow = window.innerHeight - rect.bottom;
+          
+          if (spaceBelow < menuHeight) {
+            menu.style.bottom = (window.innerHeight - rect.top + 5) + 'px';
+            menu.style.top = 'auto';
+          } else {
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.bottom = 'auto';
+          }
+          
+          menu.style.left = (rect.right - 192) + 'px'; // 192px = w-48
+          
+          menu.classList.remove('hidden');
+        } else {
+          menu.classList.add('hidden');
+        }
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('button') && !e.target.closest('[id^="menu-"]')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+          menu.classList.add('hidden');
+        });
+      }
+    });
+    
+    document.querySelector('main').addEventListener('scroll', function() {
+      document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+      });
+    });
+
+    function openCreateModal() {
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modal-content');
+      const template = document.getElementById('create-form-template');
+      
+      modal.classList.remove('hidden');
+      modalContent.innerHTML = template.innerHTML;
+      
+      htmx.process(modalContent);
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.add('hidden');
+      }
+    });
+
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+      if (event.detail.target.id === 'schedules-list') {
+        const modal = document.getElementById('modal');
+        const isModalOpen = !modal.classList.contains('hidden');
+        
+        const isFormSubmission = event.detail.xhr && 
+          (event.detail.xhr.responseURL.includes('/schedules/') || 
+           (event.detail.xhr.responseURL.endsWith('/schedules') && 
+            (event.detail.requestConfig?.verb === 'post' || event.detail.requestConfig?.verb === 'put')));
+        
+        if (isFormSubmission && isModalOpen) {
+          modal.classList.add('hidden');
+          
+          clearFilters();
+        }
+      }
+    });
+
+    const userId = '<%= user._id %>';
+    
+    if (window.eventSource) {
+      window.eventSource.close();
+    }
+    
+    function connectSSE() {
+      window.eventSource = new EventSource('/events');
+      
+      eventSource.onopen = () => {
+        console.log('[SSE] Connected to server');
+      };
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[SSE] Message received:', data);
+          
+          if (data.type === 'connected') {
+            console.log('[SSE] Connected');
+            return;
+          }
+          
+          if (data.type === 'schedule-updated' || data.type === 'schedule-executed') {
+            handleScheduleUpdate(data);
+          }
+        } catch (error) {
+          console.error('[ERROR] Parsing SSE message:', error);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('[ERROR] SSE:', error);
+        eventSource.close();
+        console.log('[SSE] Disconnected, reconnecting in 3 seconds...');
+        setTimeout(connectSSE, 3000);
+      };
+    }
+    
+    function handleScheduleUpdate(data) {
+      console.log('[SSE] Real-time update received:', data);
+      
+      showToast(`Schedule ${data.status.toLowerCase()}!`, data.status === 'Executed' ? 'success' : 'error');
+      
+      const modal = document.getElementById('modal');
+      const isModalOpen = !modal.classList.contains('hidden');
+      
+      if (isModalOpen) {
+        console.log('[SKIP] Modal is open, skipping refresh');
+        return;
+      }
+      
+      const schedulesList = document.getElementById('schedules-list');
+      if (schedulesList) {
+        htmx.ajax('GET', '/schedules', {
+          target: '#schedules-list',
+          swap: 'innerHTML'
+        });
+        console.log('[OK] Schedule list refreshed');
+      }
+    }
+    
+    connectSSE();
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+      }`;
+      toast.textContent = message;
+      toast.style.transform = 'translateY(100px)';
+      toast.style.opacity = '0';
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      }, 100);
+      
+      setTimeout(() => {
+        toast.style.transform = 'translateY(100px)';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('search-input').value;
+      const status = document.getElementById('status-filter').value;
+      const frequency = document.getElementById('frequency-filter').value;
+      
+      const url = `/schedules?search=${encodeURIComponent(search)}&status=${status}&frequency=${frequency}`;
+      
+      htmx.ajax('GET', url, {
+        target: '#schedules-list',
+        swap: 'innerHTML'
+      });
+    }
+    
+    function clearFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('status-filter').value = '';
+      document.getElementById('frequency-filter').value = '';
+      applyFilters();
+    }
+
+    setInterval(() => {
+      applyFilters();
+    }, 60000);
+    
+    } // End of dashboardInitialized check
+  </script>
+</body>
+</html>

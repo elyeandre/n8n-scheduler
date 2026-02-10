@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - n8n Scheduler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Sidebar -->
+  <div class="flex h-screen">
+    <aside class="w-64 bg-white shadow-lg">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800">n8n<br>Scheduler</h1>
+      </div>
+      
+      <nav class="mt-6">
+        <a href="/dashboard" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          Dashboard
+        </a>
+        <a href="/execution-logs" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Execution Logs
+        </a>
+        <a href="/user/profile" hx-boost="false" class="flex items-center px-6 py-3 text-gray-700 bg-gray-100 border-l-4 border-blue-600">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Settings
+        </a>
+        <a href="/logout" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          Logout
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="p-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <h2 class="text-3xl font-bold text-gray-800">Account Settings</h2>
+          <p class="text-gray-600 mt-1">Manage your account preferences</p>
+        </div>
+
+        <!-- Settings Cards -->
+        <div class="grid gap-6 max-w-4xl">
+          <!-- Profile Info -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Profile Information</h3>
+            <form hx-post="/user/profile" hx-target="#profile-message" hx-swap="innerHTML" class="space-y-4">
+              <div id="profile-message"></div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="profile-name">Name</label>
+                <input 
+                  id="profile-name"
+                  type="text" 
+                  name="name" 
+                  value="<%= user.name %>"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="profile-email">Email</label>
+                <input 
+                  id="profile-email"
+                  type="email" 
+                  name="email" 
+                  value="<%= user.email %>"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+              </div>
+              <button 
+                type="submit"
+                class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
+              >
+                Save Changes
+              </button>
+            </form>
+          </div>
+
+          <!-- Password Settings -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">🔐 Password</h3>
+            <form id="password-form" hx-post="/user/password" hx-target="#password-message" hx-swap="innerHTML" hx-ext="json-enc" class="space-y-4">
+              <div id="password-message"></div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="current-password">Current Password</label>
+                <input 
+                  id="current-password"
+                  type="password" 
+                  name="currentPassword"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="new-password">New Password</label>
+                <input 
+                  id="new-password"
+                  type="password" 
+                  name="newPassword"
+                  minlength="6"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="confirm-password">Confirm New Password</label>
+                <input 
+                  id="confirm-password"
+                  type="password" 
+                  name="confirmPassword"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus-border-transparent"
+                  required
+                >
+                <p id="password-match-message" class="text-xs text-red-600 mt-1 hidden">Passwords do not match.</p>
+              </div>
+              <button 
+                type="submit"
+                class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 font-semibold transition-colors"
+              >
+                Update Password
+              </button>
+            </form>
+          </div>
+
+          <!-- Timezone Settings -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">🌍 Timezone Settings</h3>
+            <p class="text-gray-600 mb-4">All your schedules will use this timezone for display and creation.</p>
+            
+            <form hx-post="/user/timezone" hx-target="#timezone-message" hx-swap="innerHTML">
+              <div id="timezone-message" class="mb-4"></div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Current Timezone</label>
+                <select 
+                  name="timezone" 
+                  id="timezone-select"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <!-- Options will be populated by JavaScript -->
+                </select>
+                <p class="text-xs text-gray-500 mt-2">
+                  System detected: <span id="detected-timezone" class="font-semibold"></span>
+                </p>
+              </div>
+
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex">
+                  <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                  <div class="text-sm text-blue-800">
+                    <p class="font-semibold mb-1">How it works:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                      <li>All schedules are stored in UTC in the database</li>
+                      <li>Times are converted to your timezone for display</li>
+                      <li>When you create a schedule, it uses your selected timezone</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
+              >
+                Save Timezone
+              </button>
+            </form>
+          </div>
+
+          <!-- Current Time Display -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">⏰ Current Time</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-1">Your Time</p>
+                <p class="text-2xl font-bold text-gray-900" id="user-time">--:--:--</p>
+                <p class="text-xs text-gray-500 mt-1"><%= user.timezone || 'UTC' %></p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-1">UTC Time</p>
+                <p class="text-2xl font-bold text-gray-900" id="utc-time">--:--:--</p>
+                <p class="text-xs text-gray-500 mt-1">Universal Coordinated Time</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="bg-white rounded-xl shadow-lg p-6 border border-red-200">
+            <h3 class="text-xl font-bold text-red-600 mb-2">Danger Zone</h3>
+            <p class="text-sm text-gray-600 mb-4">Deleting your account will remove all schedules and logs permanently.</p>
+            <div id="delete-message" class="mb-4"></div>
+            <button 
+              id="delete-account-btn"
+              class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-semibold transition-colors"
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Timezone list
+    const timezones = [
+      { value: 'Pacific/Midway', label: '(UTC-11:00) Midway Island' },
+      { value: 'Pacific/Honolulu', label: '(UTC-10:00) Hawaii' },
+      { value: 'America/Anchorage', label: '(UTC-09:00) Alaska' },
+      { value: 'America/Los_Angeles', label: '(UTC-08:00) Pacific Time (US & Canada)' },
+      { value: 'America/Denver', label: '(UTC-07:00) Mountain Time (US & Canada)' },
+      { value: 'America/Chicago', label: '(UTC-06:00) Central Time (US & Canada)' },
+      { value: 'America/New_York', label: '(UTC-05:00) Eastern Time (US & Canada)' },
+      { value: 'America/Caracas', label: '(UTC-04:00) Caracas' },
+      { value: 'America/Sao_Paulo', label: '(UTC-03:00) Brasilia' },
+      { value: 'Atlantic/South_Georgia', label: '(UTC-02:00) Mid-Atlantic' },
+      { value: 'Atlantic/Azores', label: '(UTC-01:00) Azores' },
+      { value: 'UTC', label: '(UTC+00:00) UTC' },
+      { value: 'Europe/London', label: '(UTC+00:00) London' },
+      { value: 'Europe/Paris', label: '(UTC+01:00) Paris, Madrid' },
+      { value: 'Europe/Athens', label: '(UTC+02:00) Athens, Helsinki' },
+      { value: 'Europe/Moscow', label: '(UTC+03:00) Moscow' },
+      { value: 'Asia/Dubai', label: '(UTC+04:00) Dubai' },
+      { value: 'Asia/Karachi', label: '(UTC+05:00) Karachi' },
+      { value: 'Asia/Dhaka', label: '(UTC+06:00) Dhaka' },
+      { value: 'Asia/Bangkok', label: '(UTC+07:00) Bangkok, Jakarta' },
+      { value: 'Asia/Singapore', label: '(UTC+08:00) Singapore, Beijing' },
+      { value: 'Asia/Tokyo', label: '(UTC+09:00) Tokyo, Seoul' },
+      { value: 'Australia/Sydney', label: '(UTC+10:00) Sydney' },
+      { value: 'Pacific/Noumea', label: '(UTC+11:00) New Caledonia' },
+      { value: 'Pacific/Auckland', label: '(UTC+12:00) Auckland' }
+    ];
+
+    const currentTimezone = '<%= user.timezone || "UTC" %>';
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    document.getElementById('detected-timezone').textContent = detectedTimezone;
+
+    const select = document.getElementById('timezone-select');
+    timezones.forEach(tz => {
+      const option = document.createElement('option');
+      option.value = tz.value;
+      option.textContent = tz.label;
+      if (tz.value === currentTimezone) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+
+    // If current timezone not in list, add it
+    if (!timezones.find(tz => tz.value === currentTimezone)) {
+      const option = document.createElement('option');
+      option.value = currentTimezone;
+      option.textContent = `${currentTimezone}`;
+      option.selected = true;
+      select.insertBefore(option, select.firstChild);
+    }
+
+    // Update clocks
+    function updateClocks() {
+      const now = new Date();
+      
+      // User time
+      const userTimeStr = now.toLocaleTimeString('en-US', {
+        timeZone: currentTimezone,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById('user-time').textContent = userTimeStr;
+      
+      // UTC time
+      const utcTimeStr = now.toLocaleTimeString('en-US', {
+        timeZone: 'UTC',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById('utc-time').textContent = utcTimeStr;
+    }
+
+    updateClocks();
+    setInterval(updateClocks, 1000);
+
+    // Password confirmation validation
+    const passwordForm = document.getElementById('password-form');
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+    const passwordMatchMessage = document.getElementById('password-match-message');
+
+    function validatePasswordMatch() {
+      if (confirmPasswordInput.value && confirmPasswordInput.value !== newPasswordInput.value) {
+        passwordMatchMessage.classList.remove('hidden');
+        return false;
+      }
+      passwordMatchMessage.classList.add('hidden');
+      return true;
+    }
+
+    confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+    newPasswordInput.addEventListener('input', validatePasswordMatch);
+
+    passwordForm.addEventListener('submit', function(event) {
+      if (!validatePasswordMatch()) {
+        event.preventDefault();
+      }
+    });
+
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (evt.detail.target.id === 'password-message' && evt.detail.xhr?.status === 200) {
+        passwordForm.reset();
+      }
+    });
+
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      if (evt.detail.target && evt.detail.target.id === 'password-message') {
+        const response = evt.detail.xhr?.responseText || '<div class="text-red-600 text-sm">Failed to change password.</div>';
+        document.getElementById('password-message').innerHTML = response;
+      }
+    });
+
+    // Delete account confirmation and HTMX request
+    const deleteBtn = document.getElementById('delete-account-btn');
+    deleteBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        htmx.ajax('POST', '/user/delete', {
+          target: '#delete-message',
+          swap: 'innerHTML'
+        }).then(() => {
+          deleteBtn.disabled = true;
+          deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }).catch(() => {
+          document.getElementById('delete-message').innerHTML = '<div class="text-red-600 text-sm">Failed to delete account.</div>';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

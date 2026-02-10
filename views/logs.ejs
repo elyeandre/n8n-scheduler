@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Execution Logs - n8n Scheduler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Sidebar -->
+  <div class="flex h-screen">
+    <aside class="w-64 bg-white shadow-lg">
+      <div class="p-6">
+        <h1 class="text-3xl font-bold text-gray-800">n8n<br>Scheduler</h1>
+      </div>
+      
+      <nav class="mt-6">
+        <a href="/dashboard" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          Dashboard
+        </a>
+        <a href="/execution-logs" hx-boost="false" class="flex items-center px-6 py-3 text-gray-700 bg-gray-100 border-l-4 border-blue-600">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Execution Logs
+        </a>
+        <a href="/user/profile" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Settings
+        </a>
+        <a href="/logout" hx-boost="false" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-100">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          Logout
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="p-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-3xl font-bold text-gray-800">Execution Logs</h2>
+            <p class="text-gray-600 mt-1">Track all schedule executions and their results</p>
+          </div>
+          <div class="flex gap-2">
+            <button 
+              hx-delete="/logs/all/purge"
+              hx-confirm="Are you sure you want to purge ALL logs? This cannot be undone!"
+              hx-target="#logs-list"
+              hx-swap="innerHTML"
+              class="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 font-semibold flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Purge All
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white rounded-xl shadow-lg p-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <input 
+                type="text" 
+                id="log-search-input"
+                placeholder="Search by schedule name or URL..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onkeyup="applyLogFilters()"
+              >
+            </div>
+            <div>
+              <select 
+                id="log-status-filter"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onchange="applyLogFilters()"
+              >
+                <option value="">All Status</option>
+                <option value="Success">Success</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </div>
+            <div>
+              <select 
+                id="log-trigger-filter"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onchange="applyLogFilters()"
+              >
+                <option value="">All Triggers</option>
+                <option value="Cron">Cron</option>
+                <option value="Manual">Manual</option>
+              </select>
+            </div>
+            <div>
+              <button 
+                onclick="clearLogFilters()"
+                class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="bg-white rounded-xl shadow-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Schedule</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Webhook</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Trigger Type</th>
+                  <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Executed At</th>
+                  <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="logs-list" class="bg-white divide-y divide-gray-200" hx-get="/logs" hx-trigger="load" hx-swap="innerHTML">
+                <tr>
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">Loading logs...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal for Log Details -->
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8" onclick="event.stopPropagation()">
+      <div id="modal-content">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function viewLogDetails(logId) {
+      const modal = document.getElementById('modal');
+      const modalContent = document.getElementById('modal-content');
+      
+      modal.classList.remove('hidden');
+      modalContent.innerHTML = '<div class="text-center py-8">Loading...</div>';
+      
+      fetch(`/logs/${logId}/details`)
+        .then(response => response.text())
+        .then(html => {
+          modalContent.innerHTML = html;
+        })
+        .catch(error => {
+          modalContent.innerHTML = '<div class="text-red-600">Error loading log details</div>';
+        });
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.add('hidden');
+      }
+    });
+
+    function applyLogFilters() {
+      const search = document.getElementById('log-search-input').value;
+      const status = document.getElementById('log-status-filter').value;
+      const triggeredBy = document.getElementById('log-trigger-filter').value;
+      
+      const url = `/logs?search=${encodeURIComponent(search)}&status=${status}&triggeredBy=${triggeredBy}`;
+      
+      htmx.ajax('GET', url, {
+        target: '#logs-list',
+        swap: 'innerHTML'
+      });
+    }
+    
+    function clearLogFilters() {
+      document.getElementById('log-search-input').value = '';
+      document.getElementById('log-status-filter').value = '';
+      document.getElementById('log-trigger-filter').value = '';
+      applyLogFilters();
+    }
+
+    let eventSource = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000;
+    
+    function connectSSE() {
+      if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+        return;
+      }
+      
+      console.log('[SSE] Connecting...');
+      eventSource = new EventSource('/events');
+      
+      eventSource.onopen = function() {
+        console.log('[SSE] Connected');
+        reconnectAttempts = 0;
+      };
+      
+      eventSource.onmessage = function(event) {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[SSE] Message received:', data);
+          
+          switch(data.type) {
+            case 'connected':
+              console.log('[SSE] Connection confirmed');
+              break;
+              
+            case 'schedule-executed':
+            case 'schedule-updated':
+              console.log('[SSE] Schedule executed, refreshing logs...');
+              applyLogFilters();
+              break;
+          }
+        } catch (error) {
+          console.error('[ERROR] Parsing SSE message:', error);
+        }
+      };
+      
+      eventSource.onerror = function(error) {
+        console.error('[ERROR] SSE:', error);
+        eventSource.close();
+        
+        if (reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          console.log(`[RETRY] Reconnecting SSE (${reconnectAttempts}/${maxReconnectAttempts})...`);
+          setTimeout(connectSSE, reconnectDelay);
+        }
+      };
+    }
+    
+    connectSSE();
+    
+    window.addEventListener('beforeunload', function() {
+      if (eventSource) {
+        eventSource.close();
+      }
+    });
+    
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && eventSource && eventSource.readyState === EventSource.CLOSED) {
+        console.log('[SSE] Page visible again, reconnecting...');
+        reconnectAttempts = 0;
+        connectSSE();
+      }
+    });
+
+    function copyResponseData(event, logId) {
+      const element = document.getElementById(`response-data-${logId}`);
+      if (!element) {
+        console.error('Response data element not found');
+        return;
+      }
+      
+      const text = element.textContent;
+      const button = event ? event.target.closest('button') : null;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          if (button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = `
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Copied!
+            `;
+            button.classList.add('bg-green-600');
+            button.classList.remove('bg-blue-600');
+            
+            setTimeout(() => {
+              button.innerHTML = originalHTML;
+              button.classList.remove('bg-green-600');
+              button.classList.add('bg-blue-600');
+            }, 2000);
+          }
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          alert('Failed to copy to clipboard');
+        });
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          document.execCommand('copy');
+          if (button) {
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            button.classList.add('bg-green-600');
+            button.classList.remove('bg-blue-600');
+            
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.classList.remove('bg-green-600');
+              button.classList.add('bg-blue-600');
+            }, 2000);
+          }
+        } catch (err) {
+          console.error('Failed to copy:', err);
+          alert('Failed to copy to clipboard');
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

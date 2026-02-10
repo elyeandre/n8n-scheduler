@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - n8n Scheduler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    .htmx-request .spinner {
+      display: inline-block;
+    }
+    .htmx-request.hide-when-loading {
+      display: none;
+    }
+    .spinner {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">n8n<br>Scheduler</h1>
+      <p class="text-gray-600">Create your account</p>
+    </div>
+
+    <form 
+      hx-post="/auth/register" 
+      hx-target="#message" 
+      hx-swap="innerHTML swap:1s"
+      hx-disabled-elt="#register-btn"
+      class="space-y-6"
+    >
+      <div id="message" class="min-h-[20px]"></div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+        <input 
+          type="text" 
+          name="name" 
+          placeholder="Your Name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          required
+        >
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+        <input 
+          type="email" 
+          name="email" 
+          placeholder="your@email.com"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          required
+        >
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+        <input 
+          type="password" 
+          name="password" 
+          placeholder="••••••••"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          required
+          minlength="6"
+        >
+        <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+        <select 
+          name="timezone" 
+          id="timezone-select"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <!-- Options will be populated by JavaScript -->
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Auto-detected: <span id="detected-timezone" class="font-semibold"></span></p>
+      </div>
+
+      <button 
+        id="register-btn"
+        type="submit"
+        class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <svg class="spinner animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="hide-when-loading">Create Account</span>
+        <span class="spinner">Creating account...</span>
+      </button>
+    </form>
+
+    <div class="mt-6 text-center">
+      <p class="text-gray-600">
+        Already have an account? 
+        <a href="/login" class="text-blue-600 hover:text-blue-700 font-semibold">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Auto-detect and populate timezone
+    const timezones = [
+      { value: 'Pacific/Midway', label: '(UTC-11:00) Midway Island' },
+      { value: 'Pacific/Honolulu', label: '(UTC-10:00) Hawaii' },
+      { value: 'America/Anchorage', label: '(UTC-09:00) Alaska' },
+      { value: 'America/Los_Angeles', label: '(UTC-08:00) Pacific Time (US & Canada)' },
+      { value: 'America/Denver', label: '(UTC-07:00) Mountain Time (US & Canada)' },
+      { value: 'America/Chicago', label: '(UTC-06:00) Central Time (US & Canada)' },
+      { value: 'America/New_York', label: '(UTC-05:00) Eastern Time (US & Canada)' },
+      { value: 'America/Caracas', label: '(UTC-04:00) Caracas' },
+      { value: 'America/Sao_Paulo', label: '(UTC-03:00) Brasilia' },
+      { value: 'Atlantic/South_Georgia', label: '(UTC-02:00) Mid-Atlantic' },
+      { value: 'Atlantic/Azores', label: '(UTC-01:00) Azores' },
+      { value: 'UTC', label: '(UTC+00:00) UTC' },
+      { value: 'Europe/London', label: '(UTC+00:00) London' },
+      { value: 'Europe/Paris', label: '(UTC+01:00) Paris, Madrid' },
+      { value: 'Europe/Athens', label: '(UTC+02:00) Athens, Helsinki' },
+      { value: 'Europe/Moscow', label: '(UTC+03:00) Moscow' },
+      { value: 'Asia/Dubai', label: '(UTC+04:00) Dubai' },
+      { value: 'Asia/Karachi', label: '(UTC+05:00) Karachi' },
+      { value: 'Asia/Dhaka', label: '(UTC+06:00) Dhaka' },
+      { value: 'Asia/Bangkok', label: '(UTC+07:00) Bangkok, Jakarta' },
+      { value: 'Asia/Singapore', label: '(UTC+08:00) Singapore, Beijing' },
+      { value: 'Asia/Tokyo', label: '(UTC+09:00) Tokyo, Seoul' },
+      { value: 'Australia/Sydney', label: '(UTC+10:00) Sydney' },
+      { value: 'Pacific/Noumea', label: '(UTC+11:00) New Caledonia' },
+      { value: 'Pacific/Auckland', label: '(UTC+12:00) Auckland' }
+    ];
+
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById('detected-timezone').textContent = detectedTimezone;
+
+    const select = document.getElementById('timezone-select');
+    timezones.forEach(tz => {
+      const option = document.createElement('option');
+      option.value = tz.value;
+      option.textContent = tz.label;
+      if (tz.value === detectedTimezone) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+
+    // If detected timezone not in list, add it and select it
+    if (!timezones.find(tz => tz.value === detectedTimezone)) {
+      const option = document.createElement('option');
+      option.value = detectedTimezone;
+      option.textContent = `(Auto-detected) ${detectedTimezone}`;
+      option.selected = true;
+      select.insertBefore(option, select.firstChild);
+    }
+
+    // Configure HTMX to handle all responses including errors
+    document.body.addEventListener('htmx:beforeSwap', function(evt) {
+      // Allow swapping for error responses (4xx, 5xx)
+      if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 401 || evt.detail.xhr.status === 500) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
+      }
+    });
+  </script>
+</body>
+</html>
